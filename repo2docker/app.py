@@ -38,7 +38,7 @@ from .buildpacks import (
 )
 from .engine import BuildError, ContainerEngineException, ImageLoadError
 from .utils import ByteSpecification, R2dState, chdir, get_free_port, get_platform
-
+from meca4binder import MecaContentProvider
 
 class Repo2Docker(Application):
     """An application for converting git repositories to docker images"""
@@ -144,17 +144,16 @@ class Repo2Docker(Application):
     # detecting if something will successfully `git clone` is very hard if all
     # you can do is look at the path/URL to it.
     content_providers = List(
-        [
-            contentproviders.Local,
+        [   contentproviders.Local,
             contentproviders.Zenodo,
             contentproviders.Figshare,
             contentproviders.Dataverse,
             contentproviders.Hydroshare,
             contentproviders.Swhid,
-            contentproviders.CKAN,
+            MecaContentProvider,
             contentproviders.Mercurial,
             contentproviders.Git,
-        ],
+            ],
         config=True,
         help="""
         Ordered list by priority of ContentProviders to try in turn to fetch
@@ -497,6 +496,7 @@ class Repo2Docker(Application):
         Iterate through possible content providers until a valid provider,
         based on URL, is found.
         """
+        self.log.info(f"Fetching content from {url}...\n")
         picked_content_provider = None
         for ContentProvider in self.content_providers:
             cp = ContentProvider()
@@ -731,6 +731,7 @@ class Repo2Docker(Application):
                 checkout_path = self.git_workdir
 
         try:
+            self.log.info(f"REPO {self.repo}")
             self.fetch(self.repo, self.ref, checkout_path)
 
             if self.find_image():
